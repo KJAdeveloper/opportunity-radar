@@ -1,1 +1,380 @@
-PLACEHOLDER_WILL_REPLACE
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="Opportunity Radar — CRE + small-business map and ranked deals for Santa Barbara area. Not investment advice."/>
+<title>Opportunity Radar — CRE map &amp; ranked deals | Kenny Alves</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+:root{--sand:#f3ebe0;--sand2:#e8dccb;--paper:#fffdf8;--ink:#1a1f24;--mute:#4a5560;--line:#cbbba3;--sea:#0b5f63;--sea2:#08484b;--mist:rgba(11,95,99,.09);--clay:#b85c2e;--claybg:#f6ebe3;--clay2:#8a3f18;--plum:#5c3d62;--serif:"Iowan Old Style",Palatino,Georgia,serif;--sans:"Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;font:1.05rem/1.55 var(--sans);color:var(--ink);background:linear-gradient(#ebe2d4,var(--sand) 180px),var(--sand);-webkit-font-smoothing:antialiased}
+a{color:var(--sea)}.wrap{width:min(100% - 1.75rem,1100px);margin:auto}
+.mast{position:sticky;top:0;z-index:40;background:rgba(243,235,224,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.mast-inner{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem;padding:.75rem 0;align-items:center}
+.brand{font-weight:700;font-size:.92rem;display:flex;gap:.65rem;align-items:center;text-decoration:none;color:var(--ink)}
+.brand-mark{width:14px;height:14px;border-radius:2px;background:linear-gradient(145deg,var(--sea),#1a8a8f)}
+.nav{display:flex;flex-wrap:wrap;gap:.35rem}.nav a{font-size:.82rem;font-weight:600;text-decoration:none;color:var(--sea2);background:var(--paper);border:1px solid var(--line);padding:.32rem .7rem;border-radius:999px}
+.nav a.cta{background:var(--sea);color:#fff;border-color:var(--sea)}
+.asof{margin:0;color:var(--mute);font-size:.85rem}.asof time{color:var(--ink);font-weight:600}
+.hero{padding:2rem 0 1.2rem;border-bottom:3px double var(--line);margin-bottom:1.2rem;background:radial-gradient(ellipse 70% 50% at 8% 0%,rgba(11,95,99,.1),transparent 55%),radial-gradient(ellipse 45% 40% at 92% 10%,rgba(184,92,46,.08),transparent 50%)}
+.kicker{display:inline-block;margin:0 0 .65rem;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--clay2);background:var(--claybg);padding:.28rem .65rem;border-radius:999px;border:1px solid #e8c9b0}
+.hero h1{margin:0 0 .75rem;font-family:var(--serif);font-size:clamp(1.85rem,5vw,2.55rem);font-weight:700;letter-spacing:-.02em;line-height:1.12}
+.lede{margin:0;max-width:64ch;color:var(--mute)}
+.note{margin:0 0 1.4rem;padding:1rem 1.1rem;background:var(--claybg);border:1px solid #e5c6a8;border-left:5px solid var(--clay)}
+.note h2{margin:0 0 .35rem;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--clay2)}
+.note ul{margin:0;padding-left:1.1rem;font-size:.92rem}
+.sec{padding:0 0 2rem}.sec-head{display:flex;flex-wrap:wrap;gap:.55rem;align-items:baseline;margin:0 0 .9rem;padding-bottom:.5rem;border-bottom:2px solid var(--ink)}
+.sec-head h2{margin:0;font-family:var(--serif);font-size:1.4rem}
+.tag{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--clay);padding:.18rem .5rem;border-radius:999px}
+.tag.sea{background:var(--sea)}.intro{margin:-.2rem 0 1rem;color:var(--mute);font-size:.98rem}
+.filters{display:grid;gap:.65rem;margin-bottom:1rem}@media(min-width:720px){.filters{grid-template-columns:2fr 1fr .9fr}}
+.fld{display:flex;flex-direction:column;gap:.25rem;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.fld input,.fld select{font:1rem/1.3 var(--sans);font-weight:600;color:var(--ink);letter-spacing:0;text-transform:none;padding:.55rem .65rem;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+.layout{display:grid;gap:1rem;margin-bottom:1.2rem}@media(min-width:960px){.layout{grid-template-columns:1.35fr 1fr;min-height:480px}}
+#map{height:360px;width:100%;border:1px solid var(--line);border-radius:4px;background:var(--sand2);z-index:1}@media(min-width:960px){#map{height:100%;min-height:480px}}
+.map-note{margin:.45rem 0 0;font-size:.8rem;color:var(--mute)}
+.list-pane{background:var(--paper);border:1px solid var(--line);display:flex;flex-direction:column;max-height:520px}
+.list-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .85rem;border-bottom:1px solid var(--line);font-size:.92rem}
+.rank-list{list-style:none;margin:0;padding:0;overflow:auto;flex:1}
+.rank-item{width:100%;display:grid;grid-template-columns:2.2rem auto 1fr;gap:.55rem;align-items:start;text-align:left;padding:.7rem .85rem;border:0;border-bottom:1px solid #eee4d6;background:transparent;cursor:pointer;font:inherit;color:inherit}
+.rank-item:hover,.rank-item.active{background:var(--mist)}
+.ri-pos{font-family:var(--serif);font-weight:700;color:var(--mute);padding-top:.15rem}
+.ri-body{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.ri-body strong{font-family:var(--serif);font-size:.98rem;line-height:1.25}
+.ri-meta{font-size:.82rem;color:var(--mute)}
+.score-badge{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:2.4rem;padding:.2rem .35rem;border-radius:4px;font-weight:800;font-size:.95rem;line-height:1.1;color:#fff;background:var(--mute)}
+.score-badge small{font-size:.65rem;font-weight:700;opacity:.9}
+.grade-A{background:var(--sea)}.grade-B{background:var(--clay)}.grade-C{background:var(--plum)}
+.blur-wrap{position:relative;overflow:hidden}
+.blurred{filter:blur(5px);user-select:none;pointer-events:none;opacity:.55}
+.gate{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,transparent 5%,rgba(243,235,224,.94) 50%);padding:1rem}
+.gate-box{max-width:400px;text-align:center;background:var(--paper);border:2px solid var(--ink);padding:1.15rem;box-shadow:0 2px 12px rgba(26,31,36,.08)}
+.gate-box h3{margin:0 0 .4rem;font-family:var(--serif)}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:.65rem 1.1rem;font-weight:700;font-size:.92rem;border-radius:8px;border:1px solid transparent;cursor:pointer;text-decoration:none;font-family:var(--sans)}
+.btn-primary{background:var(--sea);color:#fff}.btn-warm{background:var(--clay);color:#fff}.btn-ghost{background:var(--paper);color:var(--sea2);border-color:var(--line)}
+.btn-row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem;justify-content:center}
+.slot{margin:1.25rem 0;padding:1.15rem 1.2rem;border-radius:4px;border:1px solid var(--line);background:var(--paper)}
+.slot[data-slot="slot-hero-cta"]{border-left:5px solid var(--sea);background:linear-gradient(90deg,var(--mist),var(--paper) 40%)}
+.slot[data-slot="slot-digest-banner"]{border:2px solid var(--ink);background:var(--sand)}
+.slot[data-slot="slot-ad-inline"]{border-style:dashed;min-height:90px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mute);font-size:.9rem}
+.slot h3{margin:0 0 .4rem;font-family:var(--serif);font-size:1.2rem}
+.slot p{margin:0 0 .75rem;color:var(--mute);font-size:.95rem}
+.email-row{display:flex;flex-wrap:wrap;gap:.45rem}
+.email-row input{flex:1;min-width:180px;padding:.65rem .8rem;border:1px solid var(--line);border-radius:8px;font:1rem var(--sans)}
+.tools-grid{display:grid;gap:.75rem}@media(min-width:640px){.tools-grid{grid-template-columns:1fr 1fr}}
+.tool-card{background:var(--paper);border:1px solid var(--line);padding:1rem;text-decoration:none;color:inherit}
+.tool-card:hover{border-color:var(--sea)}.tool-card .pill{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sea2);background:var(--mist);padding:.15rem .45rem}
+.tool-card h4{margin:.5rem 0 .35rem;font-family:var(--serif);font-size:1.05rem;color:var(--ink)}
+.tool-card p{margin:0;font-size:.9rem;color:var(--mute)}.tool-card .go{margin-top:.6rem;font-size:.88rem;font-weight:700;color:var(--sea)}
+.pricing{display:grid;gap:.85rem}@media(min-width:700px){.pricing{grid-template-columns:1fr 1fr}}
+.price-card{background:var(--paper);border:1px solid var(--line);padding:1.25rem;display:flex;flex-direction:column;gap:.5rem}
+.price-card.featured{border:2px solid var(--sea)}.price-card h3{margin:0;font-family:var(--serif)}
+.price-card .amt{font-size:2rem;font-weight:800;color:var(--sea2)}.price-card .amt small{font-size:.95rem;font-weight:600;color:var(--mute)}
+.price-card ul{margin:.5rem 0 1rem;padding-left:1.1rem;color:var(--mute);font-size:.92rem;flex:1}
+.msg{margin-top:.5rem;font-size:.9rem;color:var(--clay2)}.msg.ok{color:var(--sea2)}
+.drawer-bg{position:fixed;inset:0;background:rgba(26,31,36,.45);z-index:80;display:none;justify-content:flex-end}
+.drawer-bg.open{display:flex}
+.drawer{width:min(420px,100%);height:100%;background:var(--paper);border-left:1px solid var(--line);padding:1.1rem 1.2rem;overflow:auto}
+.drawer h3{margin:0 0 .25rem;font-family:var(--serif);font-size:1.25rem}
+.price-lg{margin:0;font-size:1.35rem;font-weight:800;color:var(--sea2)}
+footer{margin-top:1rem;padding:1.6rem 0 2.3rem;border-top:3px double var(--line);text-align:center;color:var(--mute);font-size:.85rem}
+.partners{margin:1rem 0;padding:.85rem;border:1px dashed var(--line);color:var(--mute);font-size:.85rem}
+.modal{position:fixed;inset:0;background:rgba(26,31,36,.5);z-index:90;display:none;align-items:flex-start;justify-content:center;padding:1rem;overflow:auto}
+.modal.open{display:flex}.modal-panel{width:min(720px,100%);margin:1rem auto;background:var(--sand);border:2px solid var(--ink);padding:1rem 1.15rem}
+.duel-grid{display:grid;gap:1rem}@media(min-width:700px){.duel-grid{grid-template-columns:1fr 1fr}}
+.duel-card{background:var(--paper);border:1px solid var(--line);padding:1rem}
+.metrics{margin-top:.75rem;padding:.65rem .8rem;background:var(--sand);border:1px solid #ddd0bc;font-size:.92rem}
+.metrics div{display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px dashed #ddd0bc}.metrics div:last-child{border:0}
+</style>
+</head>
+<body>
+<header class="mast"><div class="wrap mast-inner">
+<a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Opportunity Radar · Kenny Alves</a>
+<nav class="nav" aria-label="Primary">
+<a href="#radar">Map</a><a href="#ranks">Ranks</a><a href="/guides/small-business-acquisition-roi">ROI guide</a><a href="/guides/deal-scarcity-signals">Scarcity</a><a href="/guides/sde-vs-ebitda-buyer">SDE vs EBITDA</a><a href="https://setaside-tax.vercel.app?utm_source=opportunity_radar&utm_medium=crosslink&utm_campaign=zero_rely" rel="noopener">SetAside</a><a href="#slot-tools-grid">Tools</a><a class="cta" href="#duel-open" id="nav-duel">ROI Duel</a>
+</nav>
+<p class="asof">Pack as of <time datetime="2026-10-01">Thu Oct 1, 2026 PT</time></p>
+</div></header>
+<main>
+<section class="hero"><div class="wrap">
+<p class="kicker">CRE + small business · SB-area · no SFH/condo</p>
+<h1>Opportunity Radar</h1>
+<p class="lede">Map + ranked multifamily, commercial, mixed-use, and business deals. Free teaser shows blurred cashflow ranks — Pro unlocks full scores &amp; weekly digest. Curated/sample + paste scoring only. Never scrapes Crexi/Redfin/Zillow/MLS.</p>
+</div></section>
+<div class="wrap"><aside class="note" role="note"><h2>Disclaimer</h2>
+<ul><li><strong>Not investment advice.</strong> Operator research snapshot only.</li>
+<li>Data from Opportunity packs / pasted public listing URLs — no scraping.</li>
+<li>Map pins approximate. Scores are heuristics, not appraisals.</li></ul></aside></div>
+
+<section class="sec" id="radar"><div class="wrap">
+<div class="sec-head"><h2>Radar</h2><span class="tag sea">Mock pins · OSM</span></div>
+<p class="intro">Search and filter curated CRE/business inventory. Click a pin or row for detail.</p>
+<div class="filters">
+<label class="fld">Search<input id="q" type="search" placeholder="Address, area, thesis…"/></label>
+<label class="fld">Asset<select id="asset"><option value="all">All CRE / business</option><option value="mf">Multifamily</option><option value="commercial">Commercial</option><option value="mixed_use">Mixed-use</option><option value="business">Business</option></select></label>
+<label class="fld">Min score<select id="mins"><option value="0">Any</option><option value="60">60+</option><option value="70">70+</option><option value="80">80+</option></select></label>
+</div>
+<div class="layout">
+<div><div id="map" aria-label="Opportunity map"></div>
+<p class="map-note">Pins approximate (Mesa / East Beach / Carp / Downtown). Leaflet + OSM. Empty = no licensed feed yet.</p></div>
+<div class="list-pane">
+<div class="list-head"><span><strong id="count">0</strong> ranked</span>
+<button type="button" class="btn btn-ghost" id="btn-duel" style="padding:.35rem .7rem;font-size:.8rem">ROI Duel</button></div>
+<ul class="rank-list" id="list"></ul>
+</div>
+</div>
+
+<div id="slot-hero-cta" class="slot" data-slot="slot-hero-cta">
+<h3>Unlock weekly digest + full ranks</h3>
+<p>Soft gate — get who’s winning and vanish alerts. No spam.</p>
+<form id="waitlist"><div class="email-row">
+<input type="email" required placeholder="you@email.com" id="email"/>
+<button class="btn btn-primary" type="submit">Get the pulse</button>
+</div><p class="msg" id="wl-msg" hidden></p></form>
+</div>
+
+<div id="slot-digest-banner" class="slot" data-slot="slot-digest-banner">
+<h3>Upgrade to Pro digest</h3>
+<p>Starter <strong>$19/mo</strong> — weekly who’s-winning. Pro <strong>$49/mo</strong> — vanish alerts + full scarcity + export.</p>
+<div class="btn-row" style="justify-content:flex-start">
+<a class="btn btn-warm" href="https://setaside-tax.vercel.app?utm_source=opportunity_radar&utm_medium=cta&utm_campaign=zero_stripe">Open SetAside tax tool</a>
+<a class="btn btn-ghost" href="#slot-tools-grid">Recommended tools</a>
+</div>
+<p class="msg" id="stripe-msg" hidden></p>
+</div>
+</div></section>
+
+<section class="sec" id="ranks"><div class="wrap">
+<div class="sec-head"><h2>Cashflow ranks</h2><span class="tag">Free · blurred below top</span></div>
+<p class="intro">Top published-math deals visible. Deeper cashflow ranks blur until Starter/Pro (or local preview).</p>
+<div id="podium"></div>
+<div class="blur-wrap" id="blur-block">
+<div class="blurred" id="blurred-ranks"></div>
+<div class="gate" id="gate"><div class="gate-box">
+<h3>Unlock full cashflow ranks</h3>
+<p style="margin:0 0 .75rem;color:var(--mute)">Unlock tip: use recommended tools below — no payment keys needed. Preview ranks with <code>?preview=1</code>.</p>
+<div class="btn-row">
+<a class="btn btn-warm" href="https://setaside-tax.vercel.app?utm_source=opportunity_radar&utm_medium=cta&utm_campaign=zero_stripe">Open SetAside tax tool</a>
+<a class="btn btn-ghost" href="#slot-tools-grid">Recommended tools</a>
+</div>
+</div></div>
+</div>
+</div></section>
+
+<section class="sec" id="tools"><div class="wrap">
+<div id="slot-tools-grid" data-slot="slot-tools-grid">
+<p><a href="https://setaside-tax.vercel.app?utm_source=opportunity_radar&utm_medium=tools&utm_campaign=zero_stripe"><strong>SetAside</strong> — 1099 tax set-aside calculator</a></p>
+<p><a href="https://v3.coinos.io/npub1cu9kyj4hel6k72vkfqsglcesefrdn2hfrmgwz8f500mhe6pmf5fqr03wdd?utm_source=opportunity_radar&utm_medium=tools&utm_campaign=coinos_tip" rel="noopener"><strong>Tip in Bitcoin</strong> — Lightning <code>kja-radar@coinos.io</code></a></p>
+<div class="sec-head"><h2>Recommended tools</h2><span class="tag sea">Not partners yet</span></div>
+<p class="intro">Honest stack. We are <strong>not paid partners yet</strong> — official pages + UTMs until affiliate IDs exist. No fake “#1 rated.”</p>
+<div class="tools-grid">
+<a class="tool-card" href="https://www.crexi.com/?utm_source=sbdealpulse&utm_medium=web&utm_campaign=launch" target="_blank" rel="noopener"><span class="pill">Deal sourcing</span><h4>Crexi</h4><p>CRE listings &amp; comps — primary hunt surface.</p><div class="go">Visit →</div></a>
+<a class="tool-card" href="https://www.loopnet.com/?utm_source=sbdealpulse&utm_medium=web&utm_campaign=launch" target="_blank" rel="noopener"><span class="pill">Deal sourcing</span><h4>LoopNet</h4><p>National CRE board — cross-check marketing.</p><div class="go">Visit →</div></a>
+<a class="tool-card" href="https://mercury.com/?utm_source=sbdealpulse&utm_medium=web&utm_campaign=launch" target="_blank" rel="noopener"><span class="pill">Banking</span><h4>Mercury</h4><p>Business banking for deal hunters.</p><div class="go">Visit →</div></a>
+<a class="tool-card" href="https://www.biggerpockets.com/?utm_source=sbdealpulse&utm_medium=web&utm_campaign=launch" target="_blank" rel="noopener"><span class="pill">Underwriting</span><h4>BiggerPockets</h4><p>Community + calculators for MF stress tests.</p><div class="go">Visit →</div></a>
+</div></div>
+<aside id="slot-ad-inline" class="slot" data-slot="slot-ad-inline"><div><strong>House promo</strong><p style="margin:.35rem 0 0">Prefer <a href="#slot-tools-grid">recommended tools</a> or <a href="https://setaside-tax.vercel.app?utm_source=opportunity_radar&utm_medium=ad&utm_campaign=zero_stripe">SetAside</a>.</p></div></aside>
+</div></section>
+
+<section class="sec" id="pricing"><div class="wrap">
+<div class="sec-head"><h2>Membership</h2><span class="tag">Optional later</span></div>
+<p class="intro">Membership is optional later. Right now: free radar + recommended tools + SetAside — no Stripe required.</p>
+<div class="pricing">
+<article class="price-card"><h3>Starter</h3><div class="amt">$19<small>/mo</small></div>
+<ul><li>Weekly digest</li><li>Full cashflow ranks</li><li>Who’s winning</li></ul>
+<a class="btn btn-ghost" href="#slot-tools-grid">Browse tools</a></article>
+<article class="price-card featured"><h3>Pro</h3><div class="amt">$49<small>/mo</small></div>
+<ul><li>Everything in Starter</li><li>Vanish alerts</li><li>Export + full scarcity</li></ul>
+<a class="btn btn-primary" href="https://setaside-tax.vercel.app?utm_source=opportunity_radar&utm_medium=pricing&utm_campaign=zero_stripe">Try SetAside free</a></article>
+</div>
+<p class="msg" id="pricing-msg" hidden></p>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+<div id="slot-footer-partners" class="partners" data-slot="slot-footer-partners">Partner / broker-lender slot — empty until approved affiliates.</div>
+<p style="margin:.75rem 0 0"><a href="https://v3.coinos.io/npub1cu9kyj4hel6k72vkfqsglcesefrdn2hfrmgwz8f500mhe6pmf5fqr03wdd?utm_source=opportunity_radar&utm_medium=footer&utm_campaign=coinos_tip" rel="noopener">Tip this project in Bitcoin (Lightning)</a></p>
+<p>Kenny Alves · Opportunity Research · Opportunity Radar</p>
+<p>CRE + small-business only. Not investment advice. Curated packs / public URLs — verify rents, zoning, status.</p>
+</div></footer>
+
+<div class="drawer-bg" id="drawer"><aside class="drawer" id="drawer-body"></aside></div>
+
+<div class="modal" id="duel-modal"><div class="modal-panel">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+<h2 style="margin:0;font-family:var(--serif);font-size:1.2rem">ROI Duel</h2>
+<button type="button" class="btn btn-ghost" id="duel-close" style="padding:.35rem .7rem;font-size:.8rem">Close</button>
+</div>
+<p style="margin:0 0 1rem;color:var(--mute);font-size:.95rem">Your deal vs pack contender — same debt assumptions. Not investment advice.</p>
+<div class="duel-grid">
+<div class="duel-card"><h3 style="font-family:var(--serif);margin:0 0 .65rem">Your deal</h3>
+<label class="fld">Price ($)<input id="y-price" type="number" value="2500000"/></label>
+<label class="fld" style="margin-top:.5rem">NOI / yr ($)<input id="y-noi" type="number" value="140000"/></label>
+<label class="fld" style="margin-top:.5rem">Down %<input id="y-down" type="number" value="25"/></label>
+<label class="fld" style="margin-top:.5rem">Rate %<input id="y-rate" type="number" step="0.1" value="6.5"/></label>
+<div class="metrics" id="y-out"></div></div>
+<div class="duel-card"><h3 style="font-family:var(--serif);margin:0 0 .65rem">Pack contender</h3>
+<label class="fld">Opponent<select id="p-pick"></select></label>
+<label class="fld" style="margin-top:.5rem">Price ($)<input id="p-price" type="number"/></label>
+<label class="fld" style="margin-top:.5rem">NOI / yr ($)<input id="p-noi" type="number"/></label>
+<label class="fld" style="margin-top:.5rem">Down %<input id="p-down" type="number" value="25"/></label>
+<label class="fld" style="margin-top:.5rem">Rate %<input id="p-rate" type="number" step="0.1" value="6.5"/></label>
+<div class="metrics" id="p-out"></div></div>
+</div>
+<div class="btn-row" style="justify-content:flex-start"><button type="button" class="btn btn-primary" id="run-duel">Run duel</button></div>
+<p id="duel-result" style="margin:.85rem 0 0;font-family:var(--serif);font-size:1.15rem"></p>
+</div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const DEALS=[
+{id:"arroyo",name:"543½ Arroyo Ave (Arroyo House)",loc:"SB Mesa",price:3895000,noi:290952,cap:7.47,asset:"mf",badge:"Student/co-living MF · 26 beds",thesis:"Strongest published yield in band",caveat:"",scarce:"scarce",lat:34.4028,lng:-119.7285,score:92,grade:"A",why:"Published ~7.5% cap + scarcity + income clarity",link:"https://www.radiusgroup.com/listings/543-1-2-arroyo-ave/"},
+{id:"gordiano",name:"4817 San Gordiano Ave",loc:"Unincorp. SB",price:2350000,noi:141799,cap:6.03,asset:"mf",badge:"4-unit MF · verify County RC",thesis:"Best published cap if expenses hold",caveat:"Thin OpEx line · ~337 DOM",scarce:"watch",lat:34.4372,lng:-119.8321,score:84,grade:"A",why:"6%+ published cap; expense risk",link:""},
+{id:"corona",name:"412 Corona Del Mar",loc:"East Beach",price:4395000,noi:null,cap:null,asset:"mf",badge:"8-unit MF · NEW · ~$550k/unit",thesis:"East Beach density",caveat:"City RC; GSI/NOI not public",scarce:"tight",lat:34.4165,lng:-119.6682,score:71,grade:"B",why:"Location/density; income unknown",link:""},
+{id:"castillo",name:"1611 Castillo St",loc:"Santa Barbara",price:2895000,noi:null,cap:null,asset:"mf",badge:"Triplex · entitled for 7",thesis:"Entitled densification upside",caveat:"Construction / entitlement risk",scarce:"scarce",lat:34.4241,lng:-119.7055,score:74,grade:"B",why:"Value-add entitlement path",link:""},
+{id:"bath1403",name:"1403 Bath St",loc:"Downtown SB",price:2099000,noi:null,cap:null,gross:6.05,asset:"mf",badge:"6-unit MF · gross ~6.05%",thesis:"Walkable SB rent-growth",caveat:"NOI not published",scarce:"tight",lat:34.4195,lng:-119.7082,score:70,grade:"B",why:"Gross yield + location",link:"https://www.compass.com/homedetails/1403-Bath-St-Santa-Barbara-CA-93101/LWNPV_pid/"},
+{id:"viareal",name:"4420 Via Real",loc:"Carpinteria",price:1795000,noi:null,cap:null,asset:"mixed_use",badge:"Mixed-use · commercial vacant COE",thesis:"Owner-user + lease-up off 101",caveat:"",scarce:"open",lat:34.3989,lng:-119.5184,score:68,grade:"B",why:"Lease-up MU value-add",link:"https://www.coldwellbankerhomes.com/ca/carpinteria/4420-via-real/pid_72671819/"},
+{id:"voluntario",name:"102 S Voluntario",loc:"SB Eastside",price:2700000,noi:null,cap:null,asset:"mf",badge:"4-unit · 3 of 4 vacant",thesis:"Turnkey lease-up",caveat:"No published GSI",scarce:"tight",lat:34.4218,lng:-119.6825,score:66,grade:"B",why:"Lease-up upside",link:"https://www.coldwellbankerhomes.com/ca/santa-barbara/102-s-voluntario-st/pid_72558133/"},
+{id:"state2954",name:"2954 State #A",loc:"San Roque",price:1925000,noi:null,cap:null,asset:"commercial",badge:"Commercial · MTM tenant",thesis:"Re-lease / owner-user",caveat:"",scarce:"open",lat:34.4402,lng:-119.7288,score:62,grade:"B",why:"Commercial optionality",link:"https://www.coldwellbankerhomes.com/ca/santa-barbara/2954-state-st-a/pid_72635292/"},
+{id:"yanonali",name:"233 W Yanonali",loc:"West Beach",price:3150000,noi:null,cap:null,asset:"mf",badge:"4-unit · STR+RC",thesis:"STR/LTR optionality",caveat:"Incomplete rent roll",scarce:"tight",lat:34.4128,lng:-119.6921,score:58,grade:"C",why:"Location; RC/STR risk",link:""}
+];
+const ASSET={mf:"Multifamily",commercial:"Commercial",mixed_use:"Mixed-use",business:"Business"};
+const money=n=>n>=1e6?"$"+(n/1e6).toFixed(2).replace(/\.?0+$/,"")+"M":"$"+n.toLocaleString();
+const pct=n=>n==null?"—":n.toFixed(2)+"%";
+const preview=new URLSearchParams(location.search).get("preview")==="1";
+let selected=null,map,layer;
+
+function filtered(){
+  const qq=document.getElementById("q").value.trim().toLowerCase();
+  const a=document.getElementById("asset").value;
+  const ms=+document.getElementById("mins").value;
+  return DEALS.filter(d=>{
+    if(a!=="all"&&d.asset!==a)return false;
+    if(d.score<ms)return false;
+    if(!qq)return true;
+    return (d.name+d.loc+d.badge+d.thesis).toLowerCase().includes(qq);
+  }).sort((x,y)=>y.score-x.score);
+}
+
+function renderList(){
+  const rows=filtered();
+  document.getElementById("count").textContent=rows.length;
+  const ul=document.getElementById("list");
+  ul.innerHTML=rows.map((d,i)=>`<li><button type="button" class="rank-item${selected===d.id?" active":""}" data-id="${d.id}">
+<span class="ri-pos">#${i+1}</span>
+<span class="score-badge grade-${d.grade}">${d.grade}<small>${d.score}</small></span>
+<span class="ri-body"><strong>${d.name}</strong><span class="ri-meta">${money(d.price)} · ${ASSET[d.asset]} · ${d.loc}${d.cap!=null?" · "+pct(d.cap)+" cap":""}</span></span>
+</button></li>`).join("")||`<li style="padding:1rem;color:var(--mute)">No deals match. Pack seeds only — licensed feeds TBD.</li>`;
+  ul.querySelectorAll(".rank-item").forEach(b=>b.onclick=()=>openDeal(b.dataset.id));
+  syncMap(rows);
+  renderRanks(rows);
+}
+
+function syncMap(rows){
+  if(!layer)return;
+  layer.clearLayers();
+  rows.forEach(d=>{
+    const color=d.grade==="A"?"#0b5f63":d.grade==="B"?"#b85c2e":"#5c3d62";
+    const m=L.circleMarker([d.lat,d.lng],{radius:selected===d.id?12:9,color,weight:2,fillColor:color,fillOpacity:.8});
+    m.bindTooltip(`${d.grade}${d.score} · ${d.name.split("(")[0].trim()} · ${money(d.price)}`);
+    m.on("click",()=>openDeal(d.id));
+    m.addTo(layer);
+  });
+}
+
+function renderRanks(rows){
+  const withMath=rows.filter(d=>d.cap!=null||d.gross!=null);
+  const top=withMath.slice(0,2);
+  const rest=rows.filter(d=>!top.includes(d));
+  document.getElementById("podium").innerHTML=top.map((d,i)=>`<div style="display:grid;grid-template-columns:2.5rem auto 1fr;gap:.75rem;align-items:center;background:var(--paper);border:1px solid var(--line);padding:.75rem .9rem;margin-bottom:.45rem">
+<div style="font-family:var(--serif);font-weight:700;background:${i===0?"var(--sea)":"var(--ink)"};color:#fff;text-align:center;padding:.35rem;border-radius:4px">#${i+1}</div>
+<span class="score-badge grade-${d.grade}">${d.grade}<small>${d.score}</small></span>
+<div><strong style="font-family:var(--serif)">${d.name}</strong><div class="ri-meta">${money(d.price)} · ${d.cap!=null?pct(d.cap)+" cap":pct(d.gross)+" gross"} · ${d.why}</div></div></div>`).join("");
+  const blur=document.getElementById("blurred-ranks");
+  blur.innerHTML=rest.map((d,i)=>`<div style="display:grid;grid-template-columns:2.5rem auto 1fr;gap:.75rem;align-items:center;background:var(--paper);border:1px solid var(--line);padding:.75rem .9rem;margin-bottom:.45rem">
+<div style="font-family:var(--serif);font-weight:700;background:var(--ink);color:#fff;text-align:center;padding:.35rem;border-radius:4px">#${i+3}</div>
+<span class="score-badge grade-${d.grade}">${d.grade}<small>${d.score}</small></span>
+<div><strong style="font-family:var(--serif)">${d.name}</strong><div class="ri-meta">${money(d.price)} · score ${d.score} · ${d.why}</div></div></div>`).join("");
+  const gate=document.getElementById("gate");
+  if(preview){blur.classList.remove("blurred");gate.style.display="none"}
+  else{blur.classList.add("blurred");gate.style.display="flex"}
+}
+
+function openDeal(id){
+  selected=id;
+  const d=DEALS.find(x=>x.id===id);if(!d)return;
+  renderList();
+  const el=document.getElementById("drawer-body");
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+<span class="score-badge grade-${d.grade}" style="flex-direction:row;gap:.35rem;min-width:auto;padding:.35rem .65rem">${d.grade} · ${d.score}</span>
+<button type="button" class="btn btn-ghost" id="drawer-x" style="padding:.35rem .7rem;font-size:.8rem">Close</button></div>
+<h3>${d.name}</h3><p class="price-lg">${money(d.price)}</p>
+<p class="ri-meta">${ASSET[d.asset]} · ${d.badge} · ${d.loc}</p>
+<p><strong>Score why:</strong> ${d.why}</p>
+<p><strong>Thesis:</strong> ${d.thesis}</p>
+${d.caveat?`<p style="color:var(--clay2)"><strong>Caveat:</strong> ${d.caveat}</p>`:""}
+<p class="map-note">Cap ${pct(d.cap)} · NOI ${d.noi!=null?money(d.noi)+"/yr":"—"} · scarcity ${d.scarce}</p>
+<div class="btn-row" style="justify-content:flex-start">
+<button type="button" class="btn btn-primary" id="duel-this">Duel vs this</button>
+${d.link?`<a class="btn btn-ghost" href="${d.link}" target="_blank" rel="noopener">Listing ↗</a>`:""}
+</div>
+<p class="map-note">Not investment advice.</p>`;
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("drawer-x").onclick=()=>document.getElementById("drawer").classList.remove("open");
+  document.getElementById("duel-this").onclick=()=>{document.getElementById("drawer").classList.remove("open");openDuel(d.id)};
+}
+document.getElementById("drawer").onclick=e=>{if(e.target.id==="drawer")e.currentTarget.classList.remove("open")};
+
+function stripeStub(plan){
+  const msg=`Configure Stripe for ${plan==="pro"?"Pro $49":"Starter $19"}: need STRIPE_SECRET_KEY + STRIPE_PRICE_ID_${plan==="pro"?"PRO":"STARTER"}. UI ready — no fake keys.`;
+  ["stripe-msg","pricing-msg"].forEach(id=>{const n=document.getElementById(id);if(n){n.hidden=false;n.textContent=msg}});
+  alert(msg);
+}
+
+document.getElementById("waitlist").onsubmit=e=>{
+  e.preventDefault();
+  const email=document.getElementById("email").value.trim().toLowerCase();
+  try{const k="or_waitlist";const prev=JSON.parse(localStorage.getItem(k)||"[]");if(!prev.includes(email))localStorage.setItem(k,JSON.stringify([...prev,email]));localStorage.setItem("dpa_email",email)}catch(_){}
+  const m=document.getElementById("wl-msg");m.hidden=false;m.className="msg ok";m.textContent="You're on the list (local until ESP/Stripe).";
+  document.getElementById("email").value="";
+};
+
+function mp(P,rate,yrs){if(P<=0)return 0;if(rate<=0)return P/(yrs*12);const r=rate/100/12,n=yrs*12;return(P*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1)}
+function metrics(price,noi,down,rate){const dp=price*(down/100),loan=Math.max(0,price-dp),m=mp(loan,rate,30),ads=m*12,cf=(noi-ads)/12,cap=price>0?(noi/price)*100:0,coc=dp>0?((noi-ads)/dp)*100:0;return{cap,coc,cf}}
+function fillPack(id){
+  const d=DEALS.find(x=>x.id===id)||DEALS[0];
+  const noi=d.noi!=null?d.noi:(d.cap!=null?Math.round(d.price*d.cap/100):Math.round(d.price*0.05));
+  document.getElementById("p-price").value=d.price;
+  document.getElementById("p-noi").value=noi;
+}
+function openDuel(seed){
+  const sel=document.getElementById("p-pick");
+  sel.innerHTML=DEALS.map(d=>`<option value="${d.id}">${d.name} · ${money(d.price)}</option>`).join("");
+  if(seed)sel.value=seed;
+  fillPack(sel.value);
+  sel.onchange=()=>fillPack(sel.value);
+  document.getElementById("duel-modal").classList.add("open");
+}
+document.getElementById("btn-duel").onclick=()=>openDuel(selected);
+document.getElementById("nav-duel").onclick=e=>{e.preventDefault();openDuel(selected)};
+document.getElementById("duel-close").onclick=()=>document.getElementById("duel-modal").classList.remove("open");
+document.getElementById("duel-modal").onclick=e=>{if(e.target.id==="duel-modal")e.currentTarget.classList.remove("open")};
+document.getElementById("run-duel").onclick=()=>{
+  const y=metrics(+document.getElementById("y-price").value,+document.getElementById("y-noi").value,+document.getElementById("y-down").value,+document.getElementById("y-rate").value);
+  const p=metrics(+document.getElementById("p-price").value,+document.getElementById("p-noi").value,+document.getElementById("p-down").value,+document.getElementById("p-rate").value);
+  const fmt=(m)=>`<div><span>Cap</span><strong>${m.cap.toFixed(2)}%</strong></div><div><span>CoC</span><strong>${m.coc.toFixed(2)}%</strong></div><div><span>Monthly CF</span><strong>$${Math.round(m.cf).toLocaleString()}</strong></div>`;
+  document.getElementById("y-out").innerHTML=fmt(y);
+  document.getElementById("p-out").innerHTML=fmt(p);
+  let ys=0,ps=0;if(y.cap>p.cap)ys++;else if(p.cap>y.cap)ps++;if(y.coc>p.coc)ys++;else if(p.coc>y.coc)ps++;if(y.cf>p.cf)ys++;else if(p.cf>y.cf)ps++;
+  document.getElementById("duel-result").textContent=ys>ps?"You take the round":ps>ys?"Pack wins":"Dead heat";
+};
+
+["q","asset","mins"].forEach(id=>document.getElementById(id).oninput=renderList);
+map=L.map("map",{scrollWheelZoom:false}).setView([34.42,-119.7],11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap",maxZoom:18}).addTo(map);
+layer=L.layerGroup().addTo(map);
+renderList();
+</script>
+</body>
+</html>
